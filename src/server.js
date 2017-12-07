@@ -1,86 +1,50 @@
+var net = require('net');
+var clients = [];
+const port = 80;
+const GET_ALL_ROOMS_COMMAND = `7`;
+
+var sender = require('./sender');
 var sqlite = require('./sqlite');
 var roomID;
 var roomName, roomPass;
 var taskID;
 var text, creator, state;
 var data;
+var clientData;
+var command;
 
-roomName = `room`;
-roomPass = roomName;
-sqlite.createRoom(roomName, roomPass, () => {
-    console.log(`${roomName} created with password: ${roomPass}`);
+sqlite.initialize(() => {
 
-    roomID = 1;
-    text = `New task for ${roomName}`;
-    creator = `Bellkross`;
-    sqlite.addTask(roomID, text, creator, () => {
-        console.log(`Task ${text} created from: ${creator}`);
+    net.createServer((socket) => {
+        clients.push(socket);
 
-        taskID = 1;
-        state = 1;
-        sqlite.setTaskState(taskID, state, () => {
-            console.log(`Task ${taskID} state modified from ${(taskID + 1) % 2} to ${taskID}`);
-
-            taskID = 1;
-            sqlite.removeTask(taskID, () => {
-                console.log(`Task ${taskID} removed`);
-                roomID = 1;
-                text = `New task for ${roomName}`;
-                creator = `Bellkross`;
-                sqlite.addTask(roomID, text, creator, () => {
-                    console.log(`Task ${text} created from: ${creator}`);
-
-                    sqlite.getLastRoom((lastRoom) => {
-                        if (lastRoom != -1) {
-                            sqlite.getRooms((rooms) => {
-
-                                data = `[`;
-                                rooms.forEach((room) => {
-                                    if (room.ROOM_ID == lastRoom) {
-                                        data += `{"id":${room.ROOM_ID},"name":'${room.NAME}',"pass":'${room.PASSWORD}'}];`;
-                                    } else {
-                                        data += `{"id":${room.ROOM_ID},"name":'${room.NAME}',"pass":'${room.PASSWORD}'},`;
-                                    }
-                                });
-
-                                data += `&`;
-
-                                sqlite.getLastTask((lastTask) => {
-
-                                    if (lastTask != -1) {
-
-                                        data += `[`;
-
-                                        sqlite.getAllTasks((tasks) => {
-                                            tasks.forEach((task) => {
-                                                if (task.TASK_ID == lastTask) {
-                                                    data += `{"id":${task.TASK_ID},"text":'${task.TASK_TEXT}',"creator":'${task.TASK_NAME_OF_CREATOR}',`
-                                                        + `"state":${task.TASK_STATE},"fk":${task.FK_ROOM_ID}}];`;
-                                                } else {
-                                                    data += `{"id":${task.TASK_ID},"text":'${task.TASK_TEXT}',"creator":'${task.TASK_NAME_OF_CREATOR}',`
-                                                        + `"state":${task.TASK_STATE},"fk":${task.FK_ROOM_ID}},`;
-                                                }
-                                            });
-                                            data += `\n`;
-                                            console.log(data);
-                                        });
-
-                                    } else {
-                                        data += `[];\n`
-                                        console.log(data);
-                                    }
-                                });
-                            });
-                        }
-                    });
-                    //end of getLastRoom
+        socket.on('data', (data) => {
+            if (!socket.name) {
+                socket.name = data;
+                clientData = `Name ${data} readed`;
+                console.log(clientData);
+            } else {
+                command = data.toString().substring(0, 1);
+                clientData = `Command ${command} and data ${data} from ${socket.name} readed`;
+                console.log(clientData);
+                sender.readCommand(data, command, (data) => {
+                    broadcast(data);
                 });
-                //end of add task 2
-            });
-            //end of remove Task
+            }
         });
-        //end of set task
-    });
-    //end of addTask
+
+        socket.on('end', () => clients.splice(clients.indexOf(socket), 1));
+
+        function broadcast(message) {
+            clients.forEach((client) => {
+                client.write(message);
+            });
+            console.log(`brdcst: ${message}`);
+        }
+
+
+    }).listen(port);
+
+    console.log("Server running at port", port);
+
 });
-//end of createRoom
