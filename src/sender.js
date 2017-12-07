@@ -101,7 +101,6 @@ function createRoom(name, password, callback) {
 
 function getRooms(callback) {
     sqlite.getLastRoom((lastRoom) => {
-        console.log(`last room # = ${lastRoom} from getRooms`);
         if (lastRoom != -1) {
             sqlite.getRooms((rooms) => {
 
@@ -134,13 +133,11 @@ function getRooms(callback) {
                             });
                             data = `${GET_ALL_ROOMS_COMMAND}${data}`;
                             console.log(data);
-//                            socket.write(`${GET_ALL_ROOMS_COMMAND}${data}`);
                             data += `\n`;
                             callback(data);
                         });
 
                     } else {
-//                        socket.write(`${GET_ALL_ROOMS_COMMAND}${data}`);
                         data = `${GET_ALL_ROOMS_COMMAND}${data}`;
                         data += `[];`
                         console.log(data);
