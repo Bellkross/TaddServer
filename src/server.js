@@ -12,6 +12,7 @@ var text, creator, state;
 var data;
 var clientData;
 var command;
+const CHANGE_NAME_COMMAND = `0`;
 
 sqlite.initialize(() => {
 
@@ -23,13 +24,20 @@ sqlite.initialize(() => {
                 socket.name = data;
                 clientData = `Name ${data} readed`;
                 console.log(clientData);
+                sender.readCommand(`7`, `7`, (data) => {
+                    socket.write(data);
+                });
             } else {
                 command = data.toString().substring(0, 1);
                 clientData = `Command ${command} and data ${data} from ${socket.name} readed`;
                 console.log(clientData);
-                sender.readCommand(data, command, (data) => {
-                    broadcast(data);
-                });
+                if(command == CHANGE_NAME_COMMAND ) {
+                    socket.name = ``;
+                } else {
+                    sender.readCommand(data, command, (data) => {
+                        broadcast(data);
+                    });
+                }
             }
         });
 
