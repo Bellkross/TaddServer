@@ -24,9 +24,9 @@ sqlite.initialize(() => {
                 socket.name = data;
                 clientData = `Name ${data} readed`;
                 console.log(clientData);
-                sender.readCommand(`7`, `7`, (data) => {
-                    socket.write(data);
-                });
+                // sender.readCommand(`7`, `7`, (data) => {
+                //     socket.write(data);
+                // });
             } else {
                 command = data.toString().substring(0, 1);
                 clientData = `Command ${command} and data ${data} from ${socket.name} readed`;
